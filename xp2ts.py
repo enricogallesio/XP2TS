@@ -52,10 +52,18 @@ ts_path = ""
 ts_usr = ""
 ts_pwd = ""
 ts_nick = ""
-whazz_url = "http://nl1.www.ivao.aero/whazzup.txt" # TODO more URLs to be choosen randomly
+whazz_url = ""
+status_url = "http://www.ivao.aero/whazzup/status.txt"
 com1_freq =0
 
-### functions
+### functions 
+def is_number(s): # added by Mario Cavicchi cavicchi@ferrara.linux.it
+    try:
+        float(s)
+        return True
+    except ValueError:
+        return False
+
 def get_config():       # takes TS useful variables and fixes paths to call TS instance
     
     if not os.path.exists("./config.ini"):
@@ -119,7 +127,7 @@ def freq_conn(ts_server,freq_chan,retry):   # connects TS to any server/freq.cha
     ts_conn_cmd = ts_prefix_complete + ts_server + ts_login + freq_chan
     consolecmd(ts_conn_cmd,"ts.log","a") # pass command to console and log output
     print " "
-    print "Connecting to " + ts_server + "...\n" #+ "with command: " + ts_conn_cmd   # debug
+    print "Connecting to " + ts_server + "...\n" + "with command: " + ts_conn_cmd   # debug
     time.sleep(3)
                                         # now let's check we're connected correctly
                                         
@@ -195,10 +203,14 @@ def extract_atc(com1_freq):     #parses data got from internet and chooses the p
             
             trim2_left = trim1_left[8:]
             lat = trim2_left[:trim2_left.find(":")]
+            if is_number(lat) == False: # added by Mario Cavicchi cavicchi@ferrara.linux.it
+                continue
             lat = float(lat) # we need float data to calculate distance. TODO trunk decimals
             
             trim3_left = trim2_left[trim2_left.find(":")+1:]
             lon = trim3_left[:trim3_left.find(":")]
+            if is_number(lon) == False: # added by Mario Cavicchi cavicchi@ferrara.linux.it
+                continue
             lon = float(lon) # we need float data to calculate distance. TODO trunk decimals
             
             trim4_left = line[line.find("::::::::::::::::")+16:]
@@ -206,7 +218,9 @@ def extract_atc(com1_freq):     #parses data got from internet and chooses the p
             if re.search("No Voice", ts_serv):
                 #print "ERROR No Voice station" TODO No Voice station selected? ------------!!!!!
                 continue       #avoid no voice - continue to next for cycle
-            
+    
+            if re.search("No Active ATC Position", ts_serv): # added by Mario Cavicchi cavicchi@ferrara.linux.it
+                continue
             #whazzup parsing done
             
             #now calculating distances
@@ -252,13 +266,26 @@ def calculate_distance(lat1, lon1, lat2, lon2): #self explicative returns geogra
     #distance = arc*6373 # if kilometers needed
     return distance
 
+
+def getstatus(): # added by Mario Cavicchi cavicchi@ferrara.linux.it
+    print "Downloading network main status"
+    tmp = []
+    fin,fout = os.popen4("wget -q -O- "+status_url) 
+    for result in fout.readlines():
+        pos = result.find("url0=") 
+        if result.find("url0=") >= 0 and result.find(".gz") < 0: # 
+            print result
+            tmp.append( result[5:].strip() ) 
+    return tmp
+
 def getwhazzup():   # Connects to the internet and downloads the data file whazzup.txt from IVAO server only if needed
                     # which means not more than once every 5 mins. 
                     # TODO Add an option to force immediate download ----!!!!
                     # TODO we should use another data file provided from IVAO and use a geo-loc ICAO codes list ----!!!!
     if not os.path.exists("./whazzup.txt"):  
         print "Downloading network data"
-        os.system("wget -N "+whazz_url)
+        from random import choice # added by Mario Cavicchi cavicchi@ferrara.linux.it
+        os.system("wget -N " + choice(whazz_url))
         if not os.path.exists("./whazzup.txt"):
             print "ERROR while downloading network data (whazzup.txt)"
             print "Please check your network. Crashing here"
@@ -270,7 +297,8 @@ def getwhazzup():   # Connects to the internet and downloads the data file whazz
             if age_whazzup > 300:  # 3000 is for debug 300 is ok
                 #print age_whazzup
                 os.remove("whazzup.txt")
-                os.system("wget -N "+whazz_url)
+                from random import choice # added by Mario Cavicchi cavicchi@ferrara.linux.it
+                os.system("wget -N " + choice(whazz_url))
                 print "Yes, updated network data are needed. Downloading now..."
                 time.sleep(5)
             else: 
@@ -303,11 +331,12 @@ def activate_me():              # --script activation function--
                                 # gets com1_freq, IVAO data, online choosen ATC connection data,
                                 # launches TS connection and returns 0 if everything is ok
     global com1_freq, com1_freq2 # this last one is needed to manage 25KHz which is not supported by X-Plane datarefs.
-    
+    global whazz_url 
     print "...ACTIVATING at: "+ time.ctime()
     print "New Com1 freq. received: "+com1_freq+ " (or "+com1_freq2+" due to 25KHz spacing) !"
     time.sleep(1)
     print "Now deciding if we have to get a new ivao data file..."
+    whazz_url = getstatus();
     getwhazzup()
     time.sleep(1)
     print " "
