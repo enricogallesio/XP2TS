@@ -58,11 +58,11 @@ com1_freq =0
 
 ### functions 
 def is_number(s): # added by Mario Cavicchi cavicchi@ferrara.linux.it
-	try:
-		float(s)
-		return True
-	except ValueError:
-		return False
+    try:
+        float(s)
+        return True
+    except ValueError:
+        return False
 
 def get_config():       # takes TS useful variables and fixes paths to call TS instance
     
@@ -203,14 +203,14 @@ def extract_atc(com1_freq):     #parses data got from internet and chooses the p
             
             trim2_left = trim1_left[8:]
             lat = trim2_left[:trim2_left.find(":")]
-	    if is_number(lat) == False: # added by Mario Cavicchi cavicchi@ferrara.linux.it
-		continue
+            if is_number(lat) == False: # added by Mario Cavicchi cavicchi@ferrara.linux.it
+                continue
             lat = float(lat) # we need float data to calculate distance. TODO trunk decimals
             
             trim3_left = trim2_left[trim2_left.find(":")+1:]
             lon = trim3_left[:trim3_left.find(":")]
-	    if is_number(lon) == False: # added by Mario Cavicchi cavicchi@ferrara.linux.it
-		continue
+            if is_number(lon) == False: # added by Mario Cavicchi cavicchi@ferrara.linux.it
+                continue
             lon = float(lon) # we need float data to calculate distance. TODO trunk decimals
             
             trim4_left = line[line.find("::::::::::::::::")+16:]
@@ -220,7 +220,7 @@ def extract_atc(com1_freq):     #parses data got from internet and chooses the p
                 continue       #avoid no voice - continue to next for cycle
     
             if re.search("No Active ATC Position", ts_serv): # added by Mario Cavicchi cavicchi@ferrara.linux.it
-		continue
+                continue
             #whazzup parsing done
             
             #now calculating distances
@@ -268,18 +268,15 @@ def calculate_distance(lat1, lon1, lat2, lon2): #self explicative returns geogra
 
 
 def getstatus(): # added by Mario Cavicchi cavicchi@ferrara.linux.it
-	print "Downloading network main status"
-	tmp = []
-	fin,fout = os.popen4("wget -q -O- "+status_url) 
-	for result in fout.readlines():
-		pos = result.find("url0=") 
-		if result.find("url0=") >= 0 and result.find(".gz") < 0: # 
-			print result
-			tmp.append( result[5:].strip() ) 
-
-	
-	return tmp
-
+    print "Downloading network main status"
+    tmp = []
+    fin,fout = os.popen4("wget -q -O- "+status_url) 
+    for result in fout.readlines():
+        pos = result.find("url0=") 
+        if result.find("url0=") >= 0 and result.find(".gz") < 0: # 
+            print result
+            tmp.append( result[5:].strip() ) 
+    return tmp
 
 def getwhazzup():   # Connects to the internet and downloads the data file whazzup.txt from IVAO server only if needed
                     # which means not more than once every 5 mins. 
@@ -287,7 +284,7 @@ def getwhazzup():   # Connects to the internet and downloads the data file whazz
                     # TODO we should use another data file provided from IVAO and use a geo-loc ICAO codes list ----!!!!
     if not os.path.exists("./whazzup.txt"):  
         print "Downloading network data"
-	from random import choice # added by Mario Cavicchi cavicchi@ferrara.linux.it
+        from random import choice # added by Mario Cavicchi cavicchi@ferrara.linux.it
         os.system("wget -N " + choice(whazz_url))
         if not os.path.exists("./whazzup.txt"):
             print "ERROR while downloading network data (whazzup.txt)"
@@ -300,8 +297,8 @@ def getwhazzup():   # Connects to the internet and downloads the data file whazz
             if age_whazzup > 300:  # 3000 is for debug 300 is ok
                 #print age_whazzup
                 os.remove("whazzup.txt")
-		from random import choice # added by Mario Cavicchi cavicchi@ferrara.linux.it
-	        os.system("wget -N " + choice(whazz_url))
+                from random import choice # added by Mario Cavicchi cavicchi@ferrara.linux.it
+                os.system("wget -N " + choice(whazz_url))
                 print "Yes, updated network data are needed. Downloading now..."
                 time.sleep(5)
             else: 
